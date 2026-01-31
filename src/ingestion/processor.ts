@@ -2,7 +2,7 @@
 import { pool } from "../db/pool.js";
 import type { ReplyJobRow } from "./types.js";
 import { callModel } from "./model.js";
-import { insertOutboundMessage, loadConversation, loadInboundMessage, markReplyJobSucceeded, loadInboundTranscriptForConversation } from "./repo.js";
+import { insertOutboundMessage, loadConversation, loadInboundMessage, markReplyJobSucceeded, loadTranscriptForConversation } from "./repo.js";
 import { CONFIG } from "./config.js";
 
 export async function processReplyJob(job: ReplyJobRow): Promise<{
@@ -16,7 +16,7 @@ export async function processReplyJob(job: ReplyJobRow): Promise<{
 
     try {
         inbound = await loadInboundMessage(client1, job.inbound_message_id);
-        conversationContext = await loadInboundTranscriptForConversation(client1, job.conversation_id);
+        conversationContext = await loadTranscriptForConversation(client1, job.conversation_id);
         await loadConversation(client1, job.conversation_id);
     } finally {
         client1.release();

@@ -1,6 +1,6 @@
 // src/ingestion/repo.ts
 import type { PoolClient } from "pg";
-import type { ConversationRow, InboundMessageRow, InsertOutboundParams, ReplyJobRow } from "./types.js";
+import type { ConversationRow, InboundMessageRow, InsertOutboundParams, ReplyJobRow, OutboundMessageRow, TimelineRow } from "./types.js";
 
 export async function claimReplyJob(client: PoolClient, args: {
     staleLockSeconds: number;
@@ -76,9 +76,9 @@ export async function insertOutboundMessage(
     INSERT INTO outbound_messages (
       conversation_id, inbound_message_id, reply_job_id,
       provider, to_address, from_address, body,
-      status
+      status, provider_inbound_sid
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,'pending')
+    VALUES ($1,$2,$3,$4,$5,$6,$7,'pending', $8)
     ON CONFLICT (inbound_message_id) DO NOTHING
     RETURNING id
     `,
@@ -90,6 +90,7 @@ export async function insertOutboundMessage(
             params.toAddress,
             params.fromAddress,
             params.body,
+            params.provider_inbound_sid
         ]
     );
     return res.rows[0]?.id ?? null;
@@ -139,40 +140,80 @@ export async function markReplyJobFailedOrDeadletter(client: PoolClient, args: {
 }
 
 
-export function renderInboundTranscript(rows: InboundMessageRow[]): string {
+function renderTranscript(rows: TimelineRow[]): string {
+    // Keep this simple since your prompt logic is “context blob scanning”
+    // and you said “ignore roles”. We’ll just label direction.
+    // If you want different labels, change "USER"/"JAY" here.
     return rows
-        .map((m) => `USER: ${String(m.body ?? "").trim()}`)
-        .join("\n\n");
+        .map((r) => {
+            const who = r.direction === "inbound" ? "USER" : "JAY";
+            return `${who}: ${r.body}`;
+        })
+        .join("\n");
 }
 
 
-export async function loadInboundTranscriptForConversation(
+export async function loadTranscriptForConversation(
     client: PoolClient,
     conversationId: string
 ): Promise<string> {
-    // Get user_number for this conversation (so we only pull the user's messages)
+    // 1) convo metadata
     const convoRes = await client.query<ConversationRow>(
         `
-    SELECT id, channel, user_number
-    FROM conversations
-    WHERE id = $1
+      SELECT id, channel, user_number
+      FROM conversations
+      WHERE id = $1
     `,
         [conversationId]
     );
     const convo = convoRes.rows[0];
     if (!convo) throw new Error(`Conversation not found: ${conversationId}`);
 
-    // Pull *all* inbound messages for that user in this conversation
-    const res = await client.query<InboundMessageRow>(
+    // 2) inbound from the user
+    const inboundRes = await client.query<InboundMessageRow & { received_at: string }>(
         `
-    SELECT id, conversation_id, body, from_address, to_address, provider, received_at
-    FROM inbound_messages
-    WHERE conversation_id = $1
-      AND from_address = $2
-    ORDER BY received_at ASC
+      SELECT id, conversation_id, body, from_address, to_address, provider, received_at
+      FROM inbound_messages
+      WHERE conversation_id = $1
+        AND from_address = $2
+      ORDER BY received_at ASC
     `,
         [conversationId, convo.user_number]
     );
 
-    return renderInboundTranscript(res.rows);
+    // 3) outbound to the user
+    // IMPORTANT: replace created_at with your real column if different
+    const outboundRes = await client.query<OutboundMessageRow>(
+        `
+      SELECT id, conversation_id, body, from_address, to_address, provider, created_at
+      FROM outbound_messages
+      WHERE conversation_id = $1
+        AND to_address = $2
+        AND status IN ('sent','sending') -- optional: keep only actually sent-ish messages
+      ORDER BY created_at ASC
+    `,
+        [conversationId, convo.user_number]
+    );
+
+    // 4) merge into one timeline
+    const timeline: TimelineRow[] = [
+        ...inboundRes.rows.map((m) => ({
+            direction: "inbound" as const,
+            body: m.body,
+            from_address: m.from_address,
+            to_address: m.to_address,
+            provider: m.provider,
+            ts: (m as any).received_at, // typed above
+        })),
+        ...outboundRes.rows.map((m) => ({
+            direction: "outbound" as const,
+            body: m.body,
+            from_address: m.from_address,
+            to_address: m.to_address,
+            provider: m.provider,
+            ts: m.created_at,
+        })),
+    ].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+    return renderTranscript(timeline);
 }

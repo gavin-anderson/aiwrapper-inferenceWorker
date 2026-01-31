@@ -24,6 +24,25 @@ export type InboundMessageRow = {
     provider_message_sid: string;
 };
 
+export type OutboundMessageRow = {
+    id: string;
+    conversation_id: string;
+    body: string;
+    from_address: string;
+    to_address: string;
+    provider: string;
+    created_at: string; // or sent_at if you have it
+};
+
+export type TimelineRow = {
+    direction: "inbound" | "outbound";
+    body: string;
+    from_address: string;
+    to_address: string;
+    provider: string;
+    ts: string; // ISO string from DB
+};
+
 export type ConversationRow = {
     id: string;
     channel: string;
