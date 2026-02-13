@@ -3,7 +3,7 @@ import { pool } from "../db/pool.js";
 import type { InferenceJob } from "./types.js";
 import { callModel } from "./model.js";
 import { NO_REPLY_SENTINEL } from "./prompt.js";
-import { insertOutboundMessage, loadConversation, loadInboundMessage, markJobsSucceeded, loadTranscriptForConversation } from "./repo.js";
+import { insertOutboundMessage, loadConversation, loadInboundMessage, markJobsSucceeded, loadTranscriptForConversation } from "./queries.js";
 import { CONFIG } from "./config.js";
 
 export async function runInference(jobs: InferenceJob[]): Promise<{

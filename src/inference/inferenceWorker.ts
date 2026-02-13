@@ -3,7 +3,7 @@ import "dotenv/config";
 import { pool } from "../db/pool.js";
 import { CONFIG } from "./config.js";
 import { computeReplyBackoffSeconds, sleep, truncate } from "./utils.js";
-import { claimJobs, markJobsFailed } from "./repo.js";
+import { claimJobs, markJobsFailed } from "./queries.js";
 import { runInference } from "./processor.js";
 
 let stopping = false;
