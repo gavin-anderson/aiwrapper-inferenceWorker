@@ -1,4 +1,4 @@
-// src/inference/repo.ts
+// src/inference/queries.ts
 import type { PoolClient } from "pg";
 import type { ConversationRow, InboundMessageRow, InsertOutboundParams, InferenceJob, OutboundMessageRow, TimelineRow } from "./types.js";
 
