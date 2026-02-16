@@ -5,6 +5,7 @@ import { callModel, type CallModelOpts } from "./model.js";
 import { getNoReplySentinel, getPromptVersion } from "../prompts/index.js";
 import { insertOutboundMessage, loadConversation, loadInboundMessage, markJobsSucceeded, loadTranscriptForConversation } from "./queries.js";
 import { CONFIG } from "./config.js";
+import { shouldExtractContext, getUserContext } from "../userContext/getContext.js";
 
 export async function runInference(jobs: InferenceJob[]): Promise<{
     inboundProviderSid: string;
@@ -75,6 +76,18 @@ export async function runInference(jobs: InferenceJob[]): Promise<{
 
         await markJobsSucceeded(client2, jobIds);
         await client2.query("COMMIT");
+
+        // Fire-and-forget: extract user context every 30 inbound messages
+        shouldExtractContext(lastJob.conversation_id, jobs.length)
+            .then((should) => {
+                if (should) return getUserContext(lastJob.conversation_id);
+            })
+            .catch((err) => {
+                console.warn(
+                    `[user-context] Failed for conversation=${lastJob.conversation_id}:`,
+                    err?.message || err
+                );
+            });
 
         return { inboundProviderSid: inbound.provider_message_sid, insertedOutboundIds, noReply };
     } catch (e) {
