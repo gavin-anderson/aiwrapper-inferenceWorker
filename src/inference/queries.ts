@@ -100,7 +100,7 @@ export async function loadInboundMessage(client: PoolClient, inboundId: string):
 export async function loadConversation(client: PoolClient, conversationId: string): Promise<ConversationRow> {
     const res = await client.query<ConversationRow>(
         `
-    SELECT id, channel, user_number
+    SELECT id, channel, user_number, has_paid
     FROM conversations
     WHERE id = $1
     `,
@@ -190,7 +190,7 @@ export async function markJobsFailed(client: PoolClient, args: {
 function renderTranscript(rows: TimelineRow[]): string {
     return rows
         .map((r) => {
-            const who = r.direction === "inbound" ? "USER" : "JAY";
+            const who = r.direction === "inbound" ? "USER" : "SLASH";
             return `${who}: ${r.body}`;
         })
         .join("\n");
@@ -204,7 +204,7 @@ export async function loadTranscriptForConversation(
     // 1) convo metadata
     const convoRes = await client.query<ConversationRow>(
         `
-      SELECT id, channel, user_number
+      SELECT id, channel, user_number, has_paid
       FROM conversations
       WHERE id = $1
     `,
