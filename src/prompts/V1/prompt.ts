@@ -1,7 +1,8 @@
-// src/inference/prompt.ts
+// src/prompts/V1/prompt.ts
 
 type BuildSlashPromptOpts = {
     conversationContext: string;
+    hasPaid?: boolean;
 };
 
 const SYSTEM_PROMPT = `
@@ -74,6 +75,7 @@ function parseTurnsFromContext(context: string): Turn[] {
             turns.push({ who: "user", text: line.replace(/^user\s*:/i, "").trim() });
             continue;
         }
+        // Slash is canonical; jay/assistant kept as aliases for old transcripts.
         if (/^(slash|assistant|jay)\s*:/i.test(line)) {
             turns.push({ who: "slash", text: line.replace(/^(slash|assistant|jay)\s*:/i, "").trim() });
             continue;

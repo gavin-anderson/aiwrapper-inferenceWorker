@@ -14,19 +14,23 @@ export type ModelResult = {
     model: string;
 };
 
-export async function callModel(opts: {
+export type CallModelOpts = {
     conversationId: string;
     inboundProviderSid: string;
     timeoutMs: number;
     fromAddress?: string;
     conversationContext?: string;
-}): Promise<ModelResult> {
+    hasPaid?: boolean;
+};
+
+export async function callModel(opts: CallModelOpts): Promise<ModelResult> {
     const context = String(opts.conversationContext ?? "").trim();
     if (!context) return { reply: "Send me a message and I'll reply.", model: "none" };
 
     const client = getOpenAIClient();
+    const hasPaid = opts.hasPaid ?? false;
 
-    const { instructions, input } = await buildSlashPrompt({ conversationContext: context });
+    const { instructions, input } = await buildSlashPrompt({ conversationContext: context, hasPaid });
 
     const callOpenAI = (model: string, signal?: AbortSignal) =>
         client.responses.create(
