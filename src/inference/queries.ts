@@ -52,7 +52,6 @@ export async function claimJobs(client: PoolClient, args: {
         AND (
           (
             status IN ('queued','failed')
-            AND run_after <= now()
           )
           OR
           (
