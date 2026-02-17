@@ -34,7 +34,6 @@ export async function callModel(opts: CallModelOpts): Promise<ModelResult> {
     const { instructions, input } = await buildSlashPrompt({ conversationContext: context, hasPaid, userContext: opts.userContext ?? null });
 
     console.log(`[model] convo=${opts.conversationId} instructions:\n${instructions}`);
-    console.log(`[model] convo=${opts.conversationId} input:\n${input}`);
 
     const callOpenAI = (model: string, signal?: AbortSignal) =>
         client.responses.create(
