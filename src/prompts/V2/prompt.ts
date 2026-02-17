@@ -83,9 +83,15 @@ export function buildSlashPrompt(opts: BuildPromptOpts): { instructions: string;
     const context = String(opts.conversationContext ?? "").trim();
     const nudge = buildDirectorNudge(context);
 
-    const instructions = nudge
-        ? `${SYSTEM_PROMPT}\n\nDIRECTOR NOTE:\n${nudge}`
-        : SYSTEM_PROMPT;
+    let instructions = SYSTEM_PROMPT;
+
+    if (opts.userContext) {
+        instructions += `\n\n=== WHAT YOU KNOW ABOUT THIS USER ===\n${opts.userContext}`;
+    }
+
+    if (nudge) {
+        instructions += `\n\nDIRECTOR NOTE:\n${nudge}`;
+    }
 
     const input = [
         context,

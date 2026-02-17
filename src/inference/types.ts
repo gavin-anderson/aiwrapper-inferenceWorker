@@ -47,6 +47,7 @@ export type ConversationRow = {
     channel: string;
     user_number: string;
     has_paid: boolean;
+    user_context: string | null;
 };
 
 export type InsertOutboundParams = {

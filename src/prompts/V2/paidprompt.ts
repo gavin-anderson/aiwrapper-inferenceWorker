@@ -10,10 +10,17 @@ export const NO_REPLY_SENTINEL = "[NO_REPLY]";
 
 export function buildSlashPrompt(opts: BuildPromptOpts): { instructions: string; input: string } {
     const context = String(opts.conversationContext ?? "").trim();
+
+    let instructions = SYSTEM_PROMPT;
+
+    if (opts.userContext) {
+        instructions += `\n\n=== WHAT YOU KNOW ABOUT THIS USER ===\n${opts.userContext}`;
+    }
+
     const input = [
         context,
         "",
         "Reply as Slash to the most recent USER message above. Output only your response text.",
     ].join("\n");
-    return { instructions: SYSTEM_PROMPT, input };
+    return { instructions, input };
 }

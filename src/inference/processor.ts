@@ -36,6 +36,7 @@ export async function runInference(jobs: InferenceJob[]): Promise<{
         timeoutMs: CONFIG.MODEL_TIMEOUT_MS,
         conversationContext,
         hasPaid: conversation.has_paid,
+        userContext: conversation.user_context,
     };
     const { reply: replyText, model } = await callModel(modelOpts);
 
