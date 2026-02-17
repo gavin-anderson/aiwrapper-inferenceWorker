@@ -60,6 +60,7 @@ export async function claimJobs(client: PoolClient, args: {
             AND locked_at < now() - ($1::int * interval '1 second')
           )
         )
+      ORDER BY received_at ASC
       FOR UPDATE SKIP LOCKED
     )
     UPDATE inbound_messages j
