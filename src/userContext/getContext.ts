@@ -6,7 +6,7 @@ import { withRetry } from "../utils/retry.js";
 import { buildContextExtractionPrompt } from "./contextPrompt.js";
 import type { ConversationRow, InboundMessageRow, OutboundMessageRow, TimelineRow } from "../inference/types.js";
 
-const CONTEXT_MODEL = "chatgpt-5-latest";
+const CONTEXT_MODEL = process.env.OPENAI_MODEL ?? "gpt-5";
 const CONTEXT_TIMEOUT_MS = 30_000;
 
 /**
