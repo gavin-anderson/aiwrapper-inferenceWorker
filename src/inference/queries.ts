@@ -100,7 +100,7 @@ export async function loadInboundMessage(client: PoolClient, inboundId: string):
 export async function loadConversation(client: PoolClient, conversationId: string): Promise<ConversationRow> {
     const res = await client.query<ConversationRow>(
         `
-    SELECT id, channel, user_number, has_paid
+    SELECT id, channel, user_number, has_paid, user_context
     FROM conversations
     WHERE id = $1
     `,
@@ -204,7 +204,7 @@ export async function loadTranscriptForConversation(
     // 1) convo metadata
     const convoRes = await client.query<ConversationRow>(
         `
-      SELECT id, channel, user_number, has_paid
+      SELECT id, channel, user_number, has_paid, user_context
       FROM conversations
       WHERE id = $1
     `,

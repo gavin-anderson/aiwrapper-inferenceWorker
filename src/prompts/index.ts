@@ -3,6 +3,7 @@
 export type BuildPromptOpts = {
     conversationContext: string;
     hasPaid: boolean;
+    userContext: string | null;
 };
 
 export type PromptModule = {

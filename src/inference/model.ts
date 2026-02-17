@@ -21,6 +21,7 @@ export type CallModelOpts = {
     fromAddress?: string;
     conversationContext?: string;
     hasPaid?: boolean;
+    userContext?: string | null;
 };
 
 export async function callModel(opts: CallModelOpts): Promise<ModelResult> {
@@ -30,7 +31,10 @@ export async function callModel(opts: CallModelOpts): Promise<ModelResult> {
     const client = getOpenAIClient();
     const hasPaid = opts.hasPaid ?? false;
 
-    const { instructions, input } = await buildSlashPrompt({ conversationContext: context, hasPaid });
+    const { instructions, input } = await buildSlashPrompt({ conversationContext: context, hasPaid, userContext: opts.userContext ?? null });
+
+    console.log(`[model] convo=${opts.conversationId} instructions:\n${instructions}`);
+    console.log(`[model] convo=${opts.conversationId} input:\n${input}`);
 
     const callOpenAI = (model: string, signal?: AbortSignal) =>
         client.responses.create(
@@ -59,6 +63,8 @@ export async function callModel(opts: CallModelOpts): Promise<ModelResult> {
             { retries: 4, baseDelayMs: 350, maxDelayMs: 3500 }
         );
 
+        console.log(`[model] convo=${opts.conversationId} model=${PRIMARY_MODEL} raw response:\n${response?.output_text}`);
+
         let reply = response?.output_text?.trim();
         if (!reply) return { reply: "I didn't catch that — try again?", model: PRIMARY_MODEL };
 
@@ -72,6 +78,8 @@ export async function callModel(opts: CallModelOpts): Promise<ModelResult> {
                 () => withTimeout((signal) => callOpenAI(FALLBACK_MODEL, signal)),
                 { retries: 2, baseDelayMs: 400, maxDelayMs: 2500 }
             );
+
+            console.log(`[model] convo=${opts.conversationId} model=${FALLBACK_MODEL} raw response:\n${response?.output_text}`);
 
             let reply = response?.output_text?.trim();
             if (!reply) return { reply: "I didn't catch that — try again?", model: FALLBACK_MODEL };
